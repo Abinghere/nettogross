@@ -241,6 +241,7 @@ footer { margin-top: 48px; font-size: 10px; color: var(--muted); text-align: cen
           <option value="biweekly"    id="o-biweekly"></option>
           <option value="semimonthly" id="o-semimonthly"></option>
           <option value="monthly"     id="o-monthly" selected></option>
+          <option value="annually"    id="o-annually"></option>
         </select>
       </div>
       <div class="field">
@@ -273,6 +274,21 @@ footer { margin-top: 48px; font-size: 10px; color: var(--muted); text-align: cen
            target="_blank" rel="noopener">
           ↗ <span id="i-finder_text"></span>
         </a>
+      </div>
+    </div>
+
+
+    <div class="field">
+      <label id="i-suta_label"></label>
+      <div class="city-row">
+        <div class="field">
+          <div class="input-wrap">
+            <span class="prefix" style="color:var(--accent2)">%</span>
+            <input type="number" id="sutaRate" placeholder="2.85" min="0" max="20" step="0.01"
+                   oninput="liveCalc()">
+          </div>
+        </div>
+        <span class="finder-link" style="cursor:default;opacity:0.5" id="i-suta_default"></span>
       </div>
     </div>
 
@@ -315,6 +331,10 @@ footer { margin-top: 48px; font-size: 10px; color: var(--muted); text-align: cen
     <div class="result-row">
       <span class="result-label" id="i-r_med"></span>
       <span class="result-value" id="r_med">—</span>
+    </div>
+    <div class="result-row" id="addMedRow" style="display:none">
+      <span class="result-label" id="i-r_add_med"></span>
+      <span class="result-value" id="r_add_med">—</span>
     </div>
     <div class="result-row" id="cityRow" style="display:none">
       <span class="result-label" id="cityLabel"></span>
@@ -370,7 +390,7 @@ const T = {
     net_label: "Desired Net (Take-Home) Pay",
     net_error: "Please enter a valid amount.",
     period_label: "Pay Period",
-    weekly: "Weekly", biweekly: "Bi-weekly", semimonthly: "Semi-monthly", monthly: "Monthly",
+    weekly: "Weekly", biweekly: "Bi-weekly", semimonthly: "Semi-monthly", monthly: "Monthly", annually: "Annually",
     status_label: "Federal/State Withholding",
     single: "Single", married: "Married", exempt: "No Withholding (Exempt)",
     exempt_note: "⚠ No federal or Ohio state tax will be withheld. The employee is responsible for any taxes owed. Gross will only cover FICA and city tax.",
@@ -390,10 +410,13 @@ const T = {
     r_er_ss: "Employer Social Security (6.2%)",
     r_er_med: "Employer Medicare (1.45%)",
     r_futa: "FUTA (est. 0.6%)",
-    r_suta: "Ohio SUTA (est. 2.85%)",
+    r_suta: "Ohio SUTA",
+    r_add_med: "Additional Medicare (EE 0.9%, >$200k)",
     r_total: "Total Employer Cost",
+    suta_label: "SUTA Rate (default 2.85%)",
+    suta_default: "Default: 2.85% for new employers",
     pdf_btn: "↓ Download PDF Report",
-    disclaimer: "Estimates only · Ohio employees · Federal withholding per 2024 Pub 15-T · City tax excluded unless entered · FUTA/SUTA are estimates, actual rates vary · Not tax or legal advice — consult a licensed payroll professional.",
+    disclaimer: "Estimates only · Ohio employees · 2026 tax rates · Assumes first payroll of year (wage bases: SS $184,500 · FUTA $7,000 · SUTA $9,000) · City/SUTA excluded unless entered · Not tax or legal advice — consult a licensed payroll professional.",
     footer: "PayCalc · Ohio Payroll Estimator\nFree tool · Not tax advice",
     install_msg: "Add PayCalc to your home screen for quick access.",
   },
@@ -405,7 +428,7 @@ const T = {
     net_label: "员工期望税后工资（到手金额）",
     net_error: "请输入有效金额。",
     period_label: "发薪周期",
-    weekly: "每周", biweekly: "每两周", semimonthly: "每月两次", monthly: "每月",
+    weekly: "每周", biweekly: "每两周", semimonthly: "每月两次", monthly: "每月", annually: "全年",
     status_label: "联邦/州税代扣方式",
     single: "单身", married: "已婚", exempt: "不代扣税（豁免）",
     exempt_note: "⚠ 不代扣联邦及俄亥俄州所得税。员工需自行负责缴税义务。税前工资仅覆盖 FICA 及城市税。",
@@ -425,10 +448,13 @@ const T = {
     r_er_ss: "雇主社保税 6.2%",
     r_er_med: "雇主医保税 1.45%",
     r_futa: "联邦失业税 FUTA 估算 0.6%",
-    r_suta: "州失业税 SUTA 估算 2.85%",
+    r_suta: "州失业税 SUTA",
+    r_add_med: "附加医保税 员工 0.9%（>$200k）",
     r_total: "雇主总支出",
+    suta_label: "SUTA 税率（默认 2.85%）",
+    suta_default: "默认：新雇主 2.85%",
     pdf_btn: "↓ 下载 PDF 报告",
-    disclaimer: "仅供估算参考 · 适用于俄亥俄州雇主 · 联邦代扣采用2024年标准税率表 · 城市税需手动输入 · FUTA/SUTA为估算值，实际税率因雇主而异 · 不构成税务或法律建议，请以专业会计师意见为准。",
+    disclaimer: "仅供估算参考 · 俄亥俄州雇主 · 2026年税率 · 按年度首次发薪计算（SS上限 $184,500 · FUTA上限 $7,000 · SUTA上限 $9,000）· 城市税/SUTA需手动输入 · 不构成税务或法律建议，请以专业会计师意见为准。",
     footer: "PayCalc · 俄亥俄州工资计算器\n免费工具 · 非税务建议",
     install_msg: "添加到主屏幕，快速访问 PayCalc。",
   },
@@ -440,7 +466,7 @@ const T = {
     net_label: "Salario Neto Deseado",
     net_error: "Por favor ingrese un monto válido.",
     period_label: "Período de Pago",
-    weekly: "Semanal", biweekly: "Quincenal", semimonthly: "Dos veces al mes", monthly: "Mensual",
+    weekly: "Semanal", biweekly: "Quincenal", semimonthly: "Dos veces al mes", monthly: "Mensual", annually: "Anual",
     status_label: "Retención Federal/Estatal",
     single: "Soltero/a", married: "Casado/a", exempt: "Sin Retención (Exento)",
     exempt_note: "⚠ No se retendrán impuestos federales ni estatales de Ohio. El empleado es responsable de cualquier impuesto adeudado. El salario bruto solo cubrirá FICA e impuesto municipal.",
@@ -460,10 +486,13 @@ const T = {
     r_er_ss: "Seguro Social empleador 6.2%",
     r_er_med: "Medicare empleador 1.45%",
     r_futa: "FUTA est. 0.6%",
-    r_suta: "SUTA Ohio est. 2.85%",
+    r_suta: "SUTA Ohio",
+    r_add_med: "Medicare Adicional (EE 0.9%, >$200k)",
     r_total: "Costo Total del Empleador",
+    suta_label: "Tasa SUTA (default 2.85%)",
+    suta_default: "Default: 2.85% nuevos empleadores",
     pdf_btn: "↓ Descargar Reporte PDF",
-    disclaimer: "Solo estimaciones · Empleados en Ohio · Retención federal según tablas 2024 · Impuesto municipal excluido salvo entrada manual · FUTA/SUTA son estimaciones · No constituye asesoramiento fiscal o legal.",
+    disclaimer: "Solo estimaciones · Empleados en Ohio · Tasas 2026 · Asume primer pago del año (SS $184,500 · FUTA $7,000 · SUTA $9,000) · Imp. municipal/SUTA excluidos salvo entrada · No constituye asesoramiento fiscal o legal.",
     footer: "PayCalc · Calculadora de Nómina Ohio\nHerramienta gratuita · No es asesoría fiscal",
     install_msg: "Añade PayCalc a tu pantalla de inicio.",
   }
@@ -492,6 +521,12 @@ function setLang(l) {
 }
 
 // ─── Tax logic ───────────────────────────────────────────────────────────────
+// 2026 wage bases
+const SS_WAGE_BASE   = 184500;
+const FUTA_WAGE_BASE = 7000;
+const SUTA_WAGE_BASE = 9000;
+const ADD_MED_THRESHOLD = 200000;
+
 function ohioTax(ag) {
   if (ag <= 26050) return 0;
   if (ag <= 46100) return (ag - 26050) * 0.02765;
@@ -527,23 +562,35 @@ function stateTax(ag, status) {
   return ohioTax(ag);
 }
 
-function solveGross(netTarget, cityRate, status, periods) {
+// Wage-base capped per-period amount: how much of gross falls within base
+function wageCapped(annualGross, base) {
+  return Math.min(annualGross, base);
+}
+
+function solveGross(netTarget, cityRate, sutaRate, status, periods) {
   const cr = cityRate / 100;
   const isExempt = status === 'exempt';
+  // Initial guess ignoring wage bases
   let g = netTarget / (1 - 0.062 - 0.0145 - cr - (isExempt ? 0 : 0.15));
-  for (let i = 0; i < 400; i++) {
-    const ag = g * periods;
-    const f  = fedTax(ag, status) / periods;
-    const oh = stateTax(ag, status) / periods;
-    const net = g - f - oh - g*0.062 - g*0.0145 - g*cr;
-    const diff = netTarget - net;
+  for (let i = 0; i < 500; i++) {
+    const ag = g * periods;  // annual gross for income tax brackets
+    const f    = fedTax(ag, status) / periods;
+    const oh   = stateTax(ag, status) / periods;
+    // SS: capped per-period at SS_WAGE_BASE (first payroll assumption)
+    const ss_ee  = Math.min(g, SS_WAGE_BASE) * 0.062;
+    const med_ee = g * 0.0145;
+    // Additional Medicare: annualized to determine if threshold crossed
+    const add_med = g > ADD_MED_THRESHOLD ? (g - ADD_MED_THRESHOLD) * 0.009 : 0;
+    const city   = g * cr;
+    const net    = g - f - oh - ss_ee - med_ee - add_med - city;
+    const diff   = netTarget - net;
     if (Math.abs(diff) < 0.0005) break;
     g += diff * 0.75;
   }
   return g;
 }
 
-const PERIODS = { weekly:52, biweekly:26, semimonthly:24, monthly:12 };
+const PERIODS = { weekly:52, biweekly:26, semimonthly:24, monthly:12, annually:1 };
 const fmt = n => '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
 // ─── UI helpers ──────────────────────────────────────────────────────────────
@@ -575,27 +622,45 @@ function calculate(silent = false) {
   }
   errEl.style.display = 'none';
 
-  const period   = document.getElementById('payPeriod').value;
-  const status   = document.getElementById('filingStatus').value;
-  const cityRate = parseFloat(document.getElementById('cityRate').value) || 0;
-  const p        = PERIODS[period];
+  const period    = document.getElementById('payPeriod').value;
+  const status    = document.getElementById('filingStatus').value;
+  const cityRate  = parseFloat(document.getElementById('cityRate').value) || 0;
+  const sutaRate  = parseFloat(document.getElementById('sutaRate').value);
+  const sutaRateFinal = isNaN(sutaRate) ? 2.85 : sutaRate;
+  const p         = PERIODS[period];
 
-  const gross  = solveGross(netVal, cityRate, status, p);
+  const gross  = solveGross(netVal, cityRate, sutaRateFinal, status, p);
   const ag     = gross * p;
   const fed    = fedTax(ag, status) / p;
   const ohio   = stateTax(ag, status) / p;
-  const ss_ee  = gross * 0.062;
+
+  // SS: capped per-period (first payroll assumption)
+  const ss_ee  = Math.min(gross, SS_WAGE_BASE) * 0.062;
+  const er_ss  = Math.min(gross, SS_WAGE_BASE) * 0.062;
+
+  // Medicare: no cap
   const med_ee = gross * 0.0145;
-  const city   = gross * (cityRate/100);
-  const net    = gross - fed - ohio - ss_ee - med_ee - city;
-  const er_ss  = gross * 0.062;
   const er_med = gross * 0.0145;
-  const futa   = gross * 0.006;
-  const suta   = gross * 0.0285;
+
+  // Additional Medicare (EE only): per-period gross vs $200k threshold
+  const add_med = gross > ADD_MED_THRESHOLD ? (gross - ADD_MED_THRESHOLD) * 0.009 : 0;
+
+  // City tax
+  const city   = gross * (cityRate / 100);
+
+  // Net
+  const net    = gross - fed - ohio - ss_ee - med_ee - add_med - city;
+
+  // FUTA: capped per-period at $7,000
+  const futa   = Math.min(gross, FUTA_WAGE_BASE) * 0.006;
+
+  // SUTA: capped per-period at $9,000 (Ohio)
+  const suta   = Math.min(gross, SUTA_WAGE_BASE) * (sutaRateFinal / 100);
+
   const total  = gross + er_ss + er_med + futa + suta;
 
-  lastResult = { net, gross, fed, ohio, ss_ee, med_ee, city, cityRate,
-                 er_ss, er_med, futa, suta, total, status, period, netVal };
+  lastResult = { net, gross, fed, ohio, ss_ee, med_ee, add_med, city, cityRate,
+                 er_ss, er_med, futa, suta, sutaRateFinal, total, status, period, netVal };
   renderResults(lastResult);
 
   if (!silent) {
@@ -615,7 +680,17 @@ function renderResults(r) {
   document.getElementById('r_er_med').textContent= fmt(r.er_med);
   document.getElementById('r_futa').textContent  = fmt(r.futa);
   document.getElementById('r_suta').textContent  = fmt(r.suta);
+  // Dynamic SUTA label with rate
+  document.getElementById('i-r_suta').textContent = t.r_suta + ` (${r.sutaRateFinal}%)`;
   document.getElementById('r_total').textContent = fmt(r.total);
+
+  // Additional Medicare
+  if (r.add_med > 0) {
+    document.getElementById('addMedRow').style.display = 'flex';
+    document.getElementById('r_add_med').textContent = fmt(r.add_med);
+  } else {
+    document.getElementById('addMedRow').style.display = 'none';
+  }
 
   if (r.cityRate > 0) {
     document.getElementById('cityRow').style.display = 'flex';
@@ -664,13 +739,14 @@ function exportPDF() {
     [t.r_ohio,   r.status==='exempt'?'$0.00 (exempt)':fmt(r.ohio), false],
     [t.r_ss,     fmt(r.ss_ee),  false],
     [t.r_med,    fmt(r.med_ee), false],
+    ...(r.add_med > 0 ? [[t.r_add_med, fmt(r.add_med), false]] : []),
     ...(r.cityRate > 0 ? [[(lang === 'es' ? 'Impuesto Municipal' : 'City Tax') + ` (${r.cityRate}%)`, fmt(r.city), false]] : []),
     ['—', '', false],
     [lang === 'es' ? 'Costos Empleador' : 'Employer Costs', '', false],
     [t.r_er_ss,  fmt(r.er_ss),  false],
     [t.r_er_med, fmt(r.er_med), false],
     [t.r_futa,   fmt(r.futa),   false],
-    [t.r_suta,   fmt(r.suta),   false],
+    [t.r_suta + ` (${r.sutaRateFinal}%)`,   fmt(r.suta),   false],
     ['—', '', false],
     [t.r_total,  fmt(r.total),  true],
   ];
@@ -725,4 +801,3 @@ applyLang();
 </script>
 </body>
 </html>
- 
