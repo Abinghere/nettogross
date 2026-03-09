@@ -632,7 +632,8 @@ function exportPDF() {
   if (!lastResult) return;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'mm', format:'a4' });
-  const t = T[lang];
+  // Chinese fonts not supported by jsPDF, fall back to English for zh
+  const t = T[lang === 'zh' ? 'en' : lang];
   const r = lastResult;
   const now = new Date().toLocaleDateString();
 
@@ -652,20 +653,20 @@ function exportPDF() {
   doc.setTextColor(40, 40, 35);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(lang === 'zh' ? '计算明细' : lang === 'es' ? 'Desglose' : 'Payroll Breakdown', 20, 55);
+  doc.text(lang === 'es' ? 'Desglose' : 'Payroll Breakdown', 20, 55);
 
   const rows = [
     [t.r_net,    fmt(r.net),   false],
     [t.r_gross,  fmt(r.gross), true],
     ['—', '', false],
-    [lang==='zh'?'员工代扣项目': lang==='es'?'Deducciones':'Employee Deductions', '', false],
+    [lang === 'es' ? 'Deducciones' : 'Employee Deductions', '', false],
     [t.r_fed,    r.status==='exempt'?'$0.00 (exempt)':fmt(r.fed), false],
     [t.r_ohio,   r.status==='exempt'?'$0.00 (exempt)':fmt(r.ohio), false],
     [t.r_ss,     fmt(r.ss_ee),  false],
     [t.r_med,    fmt(r.med_ee), false],
-    ...(r.cityRate > 0 ? [[t.r_city + ` (${r.cityRate}%)`, fmt(r.city), false]] : []),
+    ...(r.cityRate > 0 ? [[(lang === 'es' ? 'Impuesto Municipal' : 'City Tax') + ` (${r.cityRate}%)`, fmt(r.city), false]] : []),
     ['—', '', false],
-    [lang==='zh'?'雇主承担项目': lang==='es'?'Costos Empleador':'Employer Costs', '', false],
+    [lang === 'es' ? 'Costos Empleador' : 'Employer Costs', '', false],
     [t.r_er_ss,  fmt(r.er_ss),  false],
     [t.r_er_med, fmt(r.er_med), false],
     [t.r_futa,   fmt(r.futa),   false],
@@ -694,7 +695,7 @@ function exportPDF() {
   // Footer
   doc.setFontSize(8); doc.setTextColor(150,150,140);
   doc.setFont('helvetica','normal');
-  doc.text(t.disclaimer, 20, 275, { maxWidth: 170 });
+  doc.text(T[lang === 'zh' ? 'en' : lang].disclaimer, 20, 275, { maxWidth: 170 });
 
   doc.save('paycalc-report.pdf');
 }
@@ -724,4 +725,3 @@ applyLang();
 </script>
 </body>
 </html>
- 
