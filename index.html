@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Free Ohio payroll calculator. Enter employee net pay, get gross wage and total employer cost. EN / 中文 / ES">
+<meta name="theme-color" content="#c8f060">
+<title>PayCalc – Ohio Net to Gross Payroll Calculator</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+
+<!-- Google AdSense placeholder – replace ca-pub-XXXXXXXXXXXXXXXX with your publisher ID -->
+<!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+
+<!-- jsPDF for PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+:root {
+  --bg: #0f0f0d;
+  --surface: #1a1a16;
+  --surface2: #242420;
+  --border: #2e2e28;
+  --accent: #c8f060;
+  --accent2: #f0c060;
+  --text: #e8e8e0;
+  --muted: #7a7a70;
+  --error: #f06060;
+  --success: #60f0a0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px 80px;
+}
+
+/* ── Ad slots ── */
+.ad-slot {
+  width: 100%;
+  max-width: 640px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.ad-slot.banner { height: 60px; }
+.ad-slot.rect   { height: 100px; }
+
+/* ── Lang bar ── */
+.lang-bar {
+  display: flex; gap: 8px; margin-bottom: 40px;
+  align-self: flex-end; max-width: 640px; width: 100%;
+}
+.lang-btn {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); padding: 6px 14px;
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  cursor: pointer; letter-spacing: 0.05em; transition: all 0.2s;
+}
+.lang-btn.active, .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Install banner ── */
+.install-banner {
+  display: none;
+  width: 100%; max-width: 640px;
+  background: var(--surface2); border: 1px solid var(--accent);
+  padding: 12px 16px; margin-bottom: 16px;
+  font-size: 11px; color: var(--accent);
+  align-items: center; justify-content: space-between; gap: 12px;
+}
+.install-banner.show { display: flex; }
+.install-btn {
+  background: var(--accent); color: var(--bg);
+  border: none; padding: 6px 14px;
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  font-weight: 500; cursor: pointer; white-space: nowrap;
+  letter-spacing: 0.05em;
+}
+
+/* ── Container ── */
+.container { width: 100%; max-width: 640px; }
+
+header { margin-bottom: 40px; }
+.eyebrow { font-size: 10px; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
+h1 { font-family: 'Fraunces', serif; font-size: clamp(28px, 6vw, 48px); font-weight: 300; line-height: 1.1; }
+h1 em { font-style: italic; color: var(--accent); }
+.subtitle { margin-top: 10px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+/* ── Card ── */
+.card { background: var(--surface); border: 1px solid var(--border); padding: 28px; margin-bottom: 16px; }
+.card-title { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+
+.field { margin-bottom: 20px; }
+label { display: block; font-size: 10px; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 7px; text-transform: uppercase; }
+
+.input-wrap { position: relative; display: flex; align-items: center; }
+.prefix { position: absolute; left: 13px; color: var(--accent); font-size: 14px; font-weight: 500; pointer-events: none; }
+
+input[type="number"], select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace; font-size: 15px;
+  padding: 13px 13px 13px 30px; outline: none; transition: border-color 0.2s;
+  -moz-appearance: textfield; appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+input[type="number"]:focus, select:focus { border-color: var(--accent); }
+select { padding-left: 13px; cursor: pointer; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+.city-row { display: flex; gap: 10px; align-items: flex-end; }
+.city-row .field { flex: 1; margin-bottom: 0; }
+
+.finder-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; color: var(--accent2); text-decoration: none;
+  letter-spacing: 0.04em; padding: 13px 0; white-space: nowrap; transition: opacity 0.2s;
+}
+.finder-link:hover { opacity: 0.7; }
+
+/* withholding note */
+.withholding-note {
+  display: none;
+  background: var(--surface2); border-left: 2px solid var(--accent2);
+  padding: 10px 14px; margin-top: -12px; margin-bottom: 20px;
+  font-size: 11px; color: var(--accent2); line-height: 1.6;
+}
+.withholding-note.show { display: block; }
+
+.calc-btn {
+  width: 100%; background: var(--accent); color: var(--bg);
+  border: none; padding: 17px;
+  font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+  transition: all 0.2s; margin-top: 6px;
+}
+.calc-btn:hover { background: var(--text); }
+
+/* ── Results ── */
+.results {
+  display: none; background: var(--surface);
+  border: 1px solid var(--accent); padding: 28px; margin-bottom: 16px;
+}
+.results.visible { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.result-title { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+
+.result-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 9px 0; border-bottom: 1px solid var(--border); gap: 12px;
+}
+.result-row:last-of-type { border-bottom: none; }
+.result-label { color: var(--muted); font-size: 11px; flex: 1; }
+.result-value { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; }
+.result-value.highlight { color: var(--accent); font-size: 19px; font-family: 'Fraunces', serif; font-weight: 600; }
+.result-value.total { color: var(--accent2); font-size: 19px; font-family: 'Fraunces', serif; font-weight: 600; }
+
+.section-head { font-size: 9px; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; padding: 14px 0 4px; opacity: 0.6; }
+.divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+/* PDF button */
+.pdf-btn {
+  width: 100%; background: transparent; color: var(--accent2);
+  border: 1px solid var(--accent2); padding: 14px;
+  font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+  transition: all 0.2s; margin-top: 20px; display: flex;
+  align-items: center; justify-content: center; gap: 8px;
+}
+.pdf-btn:hover { background: var(--accent2); color: var(--bg); }
+
+.disclaimer { font-size: 10px; color: var(--muted); line-height: 1.7; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); }
+.error-msg { color: var(--error); font-size: 11px; margin-top: 6px; display: none; }
+
+footer { margin-top: 48px; font-size: 10px; color: var(--muted); text-align: center; letter-spacing: 0.04em; line-height: 2; }
+</style>
+</head>
+<body>
+
+<!-- TOP AD BANNER -->
+<div class="ad-slot banner" id="ad-top">
+  <!-- AdSense unit here -->
+  <span>Advertisement</span>
+</div>
+
+<div class="lang-bar">
+  <button class="lang-btn active" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('zh')">中文</button>
+  <button class="lang-btn" onclick="setLang('es')">ES</button>
+</div>
+
+<!-- PWA install prompt -->
+<div class="install-banner" id="installBanner">
+  <span id="i-install_msg"></span>
+  <button class="install-btn" id="installBtn" onclick="installPWA()">+ Add to Home Screen</button>
+</div>
+
+<div class="container">
+  <header>
+    <div class="eyebrow" id="i-eyebrow"></div>
+    <h1 id="i-title"></h1>
+    <p class="subtitle" id="i-subtitle"></p>
+  </header>
+
+  <div class="card">
+    <div class="card-title" id="i-input_title"></div>
+
+    <div class="field">
+      <label id="i-net_label"></label>
+      <div class="input-wrap">
+        <span class="prefix">$</span>
+        <input type="number" id="netPay" placeholder="1800.00" min="0" step="0.01"
+               oninput="liveCalc()">
+      </div>
+      <div class="error-msg" id="netError"></div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label id="i-period_label"></label>
+        <select id="payPeriod" onchange="liveCalc()">
+          <option value="weekly"      id="o-weekly"></option>
+          <option value="biweekly"    id="o-biweekly"></option>
+          <option value="semimonthly" id="o-semimonthly"></option>
+          <option value="monthly"     id="o-monthly" selected></option>
+        </select>
+      </div>
+      <div class="field">
+        <label id="i-status_label"></label>
+        <select id="filingStatus" onchange="onStatusChange()">
+          <option value="single"  id="o-single"></option>
+          <option value="married" id="o-married"></option>
+          <option value="exempt"  id="o-exempt"></option>
+        </select>
+      </div>
+    </div>
+
+    <!-- No-withholding notice -->
+    <div class="withholding-note" id="withholdingNote">
+      <span id="i-exempt_note"></span>
+    </div>
+
+    <div class="field">
+      <label id="i-city_label"></label>
+      <div class="city-row">
+        <div class="field">
+          <div class="input-wrap">
+            <span class="prefix" style="color:var(--accent2)">%</span>
+            <input type="number" id="cityRate" placeholder="2.5" min="0" max="10" step="0.01"
+                   oninput="liveCalc()">
+          </div>
+        </div>
+        <a class="finder-link"
+           href="https://thefinder.tax.ohio.gov/StreamlineSalesTaxWeb/default_municipal.aspx"
+           target="_blank" rel="noopener">
+          ↗ <span id="i-finder_text"></span>
+        </a>
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calculate()" id="i-calc_btn"></button>
+  </div>
+
+  <!-- MID AD -->
+  <div class="ad-slot rect" id="ad-mid">
+    <span>Advertisement</span>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <div class="result-title" id="i-results_title"></div>
+
+    <!-- Key numbers -->
+    <div class="result-row">
+      <span class="result-label" id="i-r_net"></span>
+      <span class="result-value" id="r_net">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label" id="i-r_gross"></span>
+      <span class="result-value highlight" id="r_gross">—</span>
+    </div>
+
+    <!-- Employee deductions -->
+    <div class="section-head" id="i-sec_ee"></div>
+    <div class="result-row">
+      <span class="result-label" id="i-r_fed"></span>
+      <span class="result-value" id="r_fed">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label" id="i-r_ohio"></span>
+      <span class="result-value" id="r_ohio">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label" id="i-r_ss"></span>
+      <span class="result-value" id="r_ss">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label" id="i-r_med"></span>
+      <span class="result-value" id="r_med">—</span>
+    </div>
+    <div class="result-row" id="cityRow" style="display:none">
+      <span class="result-label" id="cityLabel"></span>
+      <span class="result-value" id="r_city">—</span>
+    </div>
+
+    <!-- Employer costs -->
+    <div class="section-head" id="i-sec_er"></div>
+    <div class="result-row">
+      <span class="result-label" id="i-r_er_ss"></span>
+      <span class="result-value" id="r_er_ss">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label" id="i-r_er_med"></span>
+      <span class="result-value" id="r_er_med">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label" id="i-r_futa"></span>
+      <span class="result-value" id="r_futa">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label" id="i-r_suta"></span>
+      <span class="result-value" id="r_suta">—</span>
+    </div>
+
+    <div class="divider"></div>
+    <div class="result-row">
+      <span class="result-label" id="i-r_total"></span>
+      <span class="result-value total" id="r_total">—</span>
+    </div>
+
+    <button class="pdf-btn" onclick="exportPDF()" id="i-pdf_btn"></button>
+
+    <p class="disclaimer" id="i-disclaimer"></p>
+  </div>
+
+  <!-- BOTTOM AD -->
+  <div class="ad-slot banner" id="ad-bottom">
+    <span>Advertisement</span>
+  </div>
+
+  <footer id="i-footer"></footer>
+</div>
+
+<script>
+// ─── Translations ────────────────────────────────────────────────────────────
+const T = {
+  en: {
+    eyebrow: "Payroll Tool · Ohio",
+    title: 'Net to <em>Gross</em><br>Calculator',
+    subtitle: "Enter the desired take-home pay. Get gross wage, all deductions, and your total employer cost — instantly.",
+    input_title: "Input",
+    net_label: "Desired Net (Take-Home) Pay",
+    net_error: "Please enter a valid amount.",
+    period_label: "Pay Period",
+    weekly: "Weekly", biweekly: "Bi-weekly", semimonthly: "Semi-monthly", monthly: "Monthly",
+    status_label: "Federal/State Withholding",
+    single: "Single", married: "Married", exempt: "No Withholding (Exempt)",
+    exempt_note: "⚠ No federal or Ohio state tax will be withheld. The employee is responsible for any taxes owed. Gross will only cover FICA and city tax.",
+    city_label: "City Tax Rate (optional)",
+    finder_text: "Not sure? Find your rate",
+    calc_btn: "Calculate",
+    results_title: "Breakdown",
+    sec_ee: "Employee Deductions",
+    sec_er: "Employer Costs",
+    r_net: "Employee Take-Home (Net)",
+    r_gross: "Gross Wage",
+    r_fed: "Federal Income Tax",
+    r_ohio: "Ohio State Tax",
+    r_ss: "Social Security (EE 6.2%)",
+    r_med: "Medicare (EE 1.45%)",
+    r_city: "City Tax",
+    r_er_ss: "Employer Social Security (6.2%)",
+    r_er_med: "Employer Medicare (1.45%)",
+    r_futa: "FUTA (est. 0.6%)",
+    r_suta: "Ohio SUTA (est. 2.85%)",
+    r_total: "Total Employer Cost",
+    pdf_btn: "↓ Download PDF Report",
+    disclaimer: "Estimates only · Ohio employees · Federal withholding per 2024 Pub 15-T · City tax excluded unless entered · FUTA/SUTA are estimates, actual rates vary · Not tax or legal advice — consult a licensed payroll professional.",
+    footer: "PayCalc · Ohio Payroll Estimator\nFree tool · Not tax advice",
+    install_msg: "Add PayCalc to your home screen for quick access.",
+  },
+  zh: {
+    eyebrow: "工资计算工具 · 俄亥俄州",
+    title: '税后反推<em>税前</em><br>工资计算器',
+    subtitle: "输入员工期望到手金额，即时获得税前工资、所有代扣明细及雇主总成本。",
+    input_title: "输入信息",
+    net_label: "员工期望税后工资（到手金额）",
+    net_error: "请输入有效金额。",
+    period_label: "发薪周期",
+    weekly: "每周", biweekly: "每两周", semimonthly: "每月两次", monthly: "每月",
+    status_label: "联邦/州税代扣方式",
+    single: "单身", married: "已婚", exempt: "不代扣税（豁免）",
+    exempt_note: "⚠ 不代扣联邦及俄亥俄州所得税。员工需自行负责缴税义务。税前工资仅覆盖 FICA 及城市税。",
+    city_label: "城市税率（选填）",
+    finder_text: "不确定税率？点此查询",
+    calc_btn: "立即计算",
+    results_title: "计算明细",
+    sec_ee: "员工代扣项目",
+    sec_er: "雇主承担项目",
+    r_net: "员工实际到手（税后）",
+    r_gross: "税前工资（Gross Pay）",
+    r_fed: "联邦所得税（代扣）",
+    r_ohio: "俄亥俄州所得税（代扣）",
+    r_ss: "社保税 员工 6.2%",
+    r_med: "医保税 员工 1.45%",
+    r_city: "城市税（代扣）",
+    r_er_ss: "雇主社保税 6.2%",
+    r_er_med: "雇主医保税 1.45%",
+    r_futa: "联邦失业税 FUTA 估算 0.6%",
+    r_suta: "州失业税 SUTA 估算 2.85%",
+    r_total: "雇主总支出",
+    pdf_btn: "↓ 下载 PDF 报告",
+    disclaimer: "仅供估算参考 · 适用于俄亥俄州雇主 · 联邦代扣采用2024年标准税率表 · 城市税需手动输入 · FUTA/SUTA为估算值，实际税率因雇主而异 · 不构成税务或法律建议，请以专业会计师意见为准。",
+    footer: "PayCalc · 俄亥俄州工资计算器\n免费工具 · 非税务建议",
+    install_msg: "添加到主屏幕，快速访问 PayCalc。",
+  },
+  es: {
+    eyebrow: "Calculadora de Nómina · Ohio",
+    title: 'Neto a <em>Bruto</em><br>Calculadora',
+    subtitle: "Ingrese el salario neto deseado. Obtenga salario bruto, deducciones y costo total del empleador al instante.",
+    input_title: "Datos",
+    net_label: "Salario Neto Deseado",
+    net_error: "Por favor ingrese un monto válido.",
+    period_label: "Período de Pago",
+    weekly: "Semanal", biweekly: "Quincenal", semimonthly: "Dos veces al mes", monthly: "Mensual",
+    status_label: "Retención Federal/Estatal",
+    single: "Soltero/a", married: "Casado/a", exempt: "Sin Retención (Exento)",
+    exempt_note: "⚠ No se retendrán impuestos federales ni estatales de Ohio. El empleado es responsable de cualquier impuesto adeudado. El salario bruto solo cubrirá FICA e impuesto municipal.",
+    city_label: "Impuesto Municipal (opcional)",
+    finder_text: "¿No sabe su tasa? Búsquela aquí",
+    calc_btn: "Calcular",
+    results_title: "Desglose",
+    sec_ee: "Deducciones del Empleado",
+    sec_er: "Costos del Empleador",
+    r_net: "Salario Neto del Empleado",
+    r_gross: "Salario Bruto",
+    r_fed: "Impuesto Federal (retenido)",
+    r_ohio: "Impuesto Estatal Ohio (retenido)",
+    r_ss: "Seguro Social empleado 6.2%",
+    r_med: "Medicare empleado 1.45%",
+    r_city: "Impuesto Municipal (retenido)",
+    r_er_ss: "Seguro Social empleador 6.2%",
+    r_er_med: "Medicare empleador 1.45%",
+    r_futa: "FUTA est. 0.6%",
+    r_suta: "SUTA Ohio est. 2.85%",
+    r_total: "Costo Total del Empleador",
+    pdf_btn: "↓ Descargar Reporte PDF",
+    disclaimer: "Solo estimaciones · Empleados en Ohio · Retención federal según tablas 2024 · Impuesto municipal excluido salvo entrada manual · FUTA/SUTA son estimaciones · No constituye asesoramiento fiscal o legal.",
+    footer: "PayCalc · Calculadora de Nómina Ohio\nHerramienta gratuita · No es asesoría fiscal",
+    install_msg: "Añade PayCalc a tu pantalla de inicio.",
+  }
+};
+
+let lang = 'en';
+let lastResult = null;
+let deferredPrompt = null;
+
+// ─── i18n ────────────────────────────────────────────────────────────────────
+function applyLang() {
+  const t = T[lang];
+  Object.keys(t).forEach(k => {
+    const el = document.getElementById('i-' + k) || document.getElementById('o-' + k);
+    if (el) el.innerHTML = t[k];
+  });
+}
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['en','zh','es'][i] === l);
+  });
+  applyLang();
+  if (lastResult) renderResults(lastResult);
+}
+
+// ─── Tax logic ───────────────────────────────────────────────────────────────
+function ohioTax(ag) {
+  if (ag <= 26050) return 0;
+  if (ag <= 46100) return (ag - 26050) * 0.02765;
+  if (ag <= 92150) return 554.30 + (ag - 46100) * 0.03226;
+  if (ag <= 115300) return 2039.13 + (ag - 92150) * 0.03688;
+  return 2893.55 + (ag - 115300) * 0.0399;
+}
+
+function fedTax(ag, status) {
+  if (status === 'exempt') return 0;
+  const std = status === 'married' ? 14600 : 7300;
+  const tx = Math.max(0, ag - std);
+  if (status === 'married') {
+    if (tx <= 23200)  return tx * 0.10;
+    if (tx <= 94300)  return 2320 + (tx-23200) * 0.12;
+    if (tx <= 201050) return 10852 + (tx-94300) * 0.22;
+    if (tx <= 383900) return 34337 + (tx-201050) * 0.24;
+    if (tx <= 487450) return 78221 + (tx-383900) * 0.32;
+    if (tx <= 731200) return 111357 + (tx-487450) * 0.35;
+    return 196669.5 + (tx-731200) * 0.37;
+  }
+  if (tx <= 11600)  return tx * 0.10;
+  if (tx <= 47150)  return 1160 + (tx-11600) * 0.12;
+  if (tx <= 100525) return 5426 + (tx-47150) * 0.22;
+  if (tx <= 191950) return 17168.5 + (tx-100525) * 0.24;
+  if (tx <= 243725) return 39110.5 + (tx-191950) * 0.32;
+  if (tx <= 609350) return 55678.5 + (tx-243725) * 0.35;
+  return 183647.25 + (tx-609350) * 0.37;
+}
+
+function stateTax(ag, status) {
+  if (status === 'exempt') return 0;
+  return ohioTax(ag);
+}
+
+function solveGross(netTarget, cityRate, status, periods) {
+  const cr = cityRate / 100;
+  const isExempt = status === 'exempt';
+  let g = netTarget / (1 - 0.062 - 0.0145 - cr - (isExempt ? 0 : 0.15));
+  for (let i = 0; i < 400; i++) {
+    const ag = g * periods;
+    const f  = fedTax(ag, status) / periods;
+    const oh = stateTax(ag, status) / periods;
+    const net = g - f - oh - g*0.062 - g*0.0145 - g*cr;
+    const diff = netTarget - net;
+    if (Math.abs(diff) < 0.0005) break;
+    g += diff * 0.75;
+  }
+  return g;
+}
+
+const PERIODS = { weekly:52, biweekly:26, semimonthly:24, monthly:12 };
+const fmt = n => '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+// ─── UI helpers ──────────────────────────────────────────────────────────────
+function onStatusChange() {
+  const status = document.getElementById('filingStatus').value;
+  const note = document.getElementById('withholdingNote');
+  note.classList.toggle('show', status === 'exempt');
+  liveCalc();
+}
+
+let calcTimer = null;
+function liveCalc() {
+  clearTimeout(calcTimer);
+  calcTimer = setTimeout(() => {
+    const v = parseFloat(document.getElementById('netPay').value);
+    if (v > 0) calculate(true);
+  }, 400);
+}
+
+function calculate(silent = false) {
+  const netVal = parseFloat(document.getElementById('netPay').value);
+  const errEl  = document.getElementById('netError');
+  if (!netVal || netVal <= 0) {
+    if (!silent) {
+      errEl.style.display = 'block';
+      document.getElementById('results').classList.remove('visible');
+    }
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const period   = document.getElementById('payPeriod').value;
+  const status   = document.getElementById('filingStatus').value;
+  const cityRate = parseFloat(document.getElementById('cityRate').value) || 0;
+  const p        = PERIODS[period];
+
+  const gross  = solveGross(netVal, cityRate, status, p);
+  const ag     = gross * p;
+  const fed    = fedTax(ag, status) / p;
+  const ohio   = stateTax(ag, status) / p;
+  const ss_ee  = gross * 0.062;
+  const med_ee = gross * 0.0145;
+  const city   = gross * (cityRate/100);
+  const net    = gross - fed - ohio - ss_ee - med_ee - city;
+  const er_ss  = gross * 0.062;
+  const er_med = gross * 0.0145;
+  const futa   = gross * 0.006;
+  const suta   = gross * 0.0285;
+  const total  = gross + er_ss + er_med + futa + suta;
+
+  lastResult = { net, gross, fed, ohio, ss_ee, med_ee, city, cityRate,
+                 er_ss, er_med, futa, suta, total, status, period, netVal };
+  renderResults(lastResult);
+
+  if (!silent) {
+    document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+}
+
+function renderResults(r) {
+  const t = T[lang];
+  document.getElementById('r_net').textContent   = fmt(r.net);
+  document.getElementById('r_gross').textContent = fmt(r.gross);
+  document.getElementById('r_fed').textContent   = r.status === 'exempt' ? '$0.00 (exempt)' : fmt(r.fed);
+  document.getElementById('r_ohio').textContent  = r.status === 'exempt' ? '$0.00 (exempt)' : fmt(r.ohio);
+  document.getElementById('r_ss').textContent    = fmt(r.ss_ee);
+  document.getElementById('r_med').textContent   = fmt(r.med_ee);
+  document.getElementById('r_er_ss').textContent = fmt(r.er_ss);
+  document.getElementById('r_er_med').textContent= fmt(r.er_med);
+  document.getElementById('r_futa').textContent  = fmt(r.futa);
+  document.getElementById('r_suta').textContent  = fmt(r.suta);
+  document.getElementById('r_total').textContent = fmt(r.total);
+
+  if (r.cityRate > 0) {
+    document.getElementById('cityRow').style.display = 'flex';
+    document.getElementById('r_city').textContent    = fmt(r.city);
+    document.getElementById('cityLabel').textContent = t.r_city + ` (${r.cityRate}%)`;
+  } else {
+    document.getElementById('cityRow').style.display = 'none';
+  }
+  document.getElementById('results').classList.add('visible');
+}
+
+// ─── PDF Export ──────────────────────────────────────────────────────────────
+function exportPDF() {
+  if (!lastResult) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const t = T[lang];
+  const r = lastResult;
+  const now = new Date().toLocaleDateString();
+
+  // Header
+  doc.setFillColor(15, 15, 13);
+  doc.rect(0, 0, 210, 40, 'F');
+  doc.setTextColor(200, 240, 96);
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.text('PayCalc', 20, 20);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(122, 122, 112);
+  doc.text('Ohio Payroll Estimator · ' + now, 20, 30);
+
+  // Body
+  doc.setTextColor(40, 40, 35);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(lang === 'zh' ? '计算明细' : lang === 'es' ? 'Desglose' : 'Payroll Breakdown', 20, 55);
+
+  const rows = [
+    [t.r_net,    fmt(r.net),   false],
+    [t.r_gross,  fmt(r.gross), true],
+    ['—', '', false],
+    [lang==='zh'?'员工代扣项目': lang==='es'?'Deducciones':'Employee Deductions', '', false],
+    [t.r_fed,    r.status==='exempt'?'$0.00 (exempt)':fmt(r.fed), false],
+    [t.r_ohio,   r.status==='exempt'?'$0.00 (exempt)':fmt(r.ohio), false],
+    [t.r_ss,     fmt(r.ss_ee),  false],
+    [t.r_med,    fmt(r.med_ee), false],
+    ...(r.cityRate > 0 ? [[t.r_city + ` (${r.cityRate}%)`, fmt(r.city), false]] : []),
+    ['—', '', false],
+    [lang==='zh'?'雇主承担项目': lang==='es'?'Costos Empleador':'Employer Costs', '', false],
+    [t.r_er_ss,  fmt(r.er_ss),  false],
+    [t.r_er_med, fmt(r.er_med), false],
+    [t.r_futa,   fmt(r.futa),   false],
+    [t.r_suta,   fmt(r.suta),   false],
+    ['—', '', false],
+    [t.r_total,  fmt(r.total),  true],
+  ];
+
+  let y = 65;
+  rows.forEach(([label, value, bold]) => {
+    if (label === '—') { y += 4; return; }
+    if (!value) {
+      doc.setFontSize(8); doc.setTextColor(122,122,112);
+      doc.setFont('helvetica','normal');
+      doc.text(label.toUpperCase(), 20, y);
+      y += 7; return;
+    }
+    doc.setFontSize(11);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.setTextColor(bold ? 15 : 60, bold ? 15 : 60, bold ? 13 : 55);
+    doc.text(label, 20, y);
+    doc.text(value, 190, y, { align:'right' });
+    y += 8;
+  });
+
+  // Footer
+  doc.setFontSize(8); doc.setTextColor(150,150,140);
+  doc.setFont('helvetica','normal');
+  doc.text(t.disclaimer, 20, 275, { maxWidth: 170 });
+
+  doc.save('paycalc-report.pdf');
+}
+
+// ─── PWA ─────────────────────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    document.getElementById('installBanner').classList.remove('show');
+  });
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+applyLang();
+</script>
+</body>
+</html>
