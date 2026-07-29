@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nettogross.com/sitemap.xml
+Sitemap: https://nettogross.com/sitemap-salary.xml
